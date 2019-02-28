@@ -4,7 +4,7 @@ from ckanext.package_converter.model.converter import Converters, XSLConverter
 import os
 
 # Add Formats
-MetadataFormats().add_metadata_format(MetadataFormat('dcat', '20140116', format_type=FormatType.RDF, 
+MetadataFormats().add_metadata_format(MetadataFormat('dcat', '20140116', format_type=FormatType.RDF,
                                 description='DCAT is an RDF vocabulary designed to facilitate interoperability '+
                                             ' between data catalogs published on the Web ' +
                                             '(https://www.w3.org/TR/2014/REC-vocab-dcat-20140116)'))
@@ -25,11 +25,15 @@ MetadataFormats().add_metadata_format(XMLMetadataFormat('oai_pmh', '2.0', 'http:
                                    namespace='http://www.openarchives.org/OAI/2.0/',
                                    description='XML Schema which can be used to validate replies to all OAI-PMH v2.0 requests'))
 
-MetadataFormats().add_metadata_format(XMLMetadataFormat('iso19139', '1.0', 'http://www.isotc211.org/2005/gmd/gmd.xsd', 
+MetadataFormats().add_metadata_format(XMLMetadataFormat('iso19139', '1.0', 'http://www.isotc211.org/2005/gmd/gmd.xsd',
                                              namespace='http://www.isotc211.org/2005/gmd',
                                              description='ISO 19115:2003/19139 XML Metadata Format'))
 
-MetadataFormats().add_metadata_format(XMLMetadataFormat('gcmd_dif', '10.2', 'http://gcmd.gsfc.nasa.gov/Aboutus/xml/dif/dif_v10.2.xsd', 
+MetadataFormats().add_metadata_format(XMLMetadataFormat('cioos', '1.0', 'http://www.isotc211.org/2005/gmd/gmd.xsd', 
+                                             namespace='http://www.isotc211.org/2005/gmd',
+                                             description='ISO 19115:2003/19139 XML Metadata Format'))
+
+MetadataFormats().add_metadata_format(XMLMetadataFormat('gcmd_dif', '10.2', 'http://gcmd.gsfc.nasa.gov/Aboutus/xml/dif/dif_v10.2.xsd',
                                              namespace='http://gcmd.gsfc.nasa.gov/Aboutus/xml/dif/',
                                              description='Global Change Master Directory Directory Interchange Format (GCMD DIF)'))
 
@@ -45,7 +49,3 @@ datacite_oai_dc_xsl_path = os.path.join(os.path.dirname(__file__), datacite_oai_
 Converters().add_converter(XSLConverter(MetadataFormats().get_metadata_formats('datacite', '3.1')[0],
                       MetadataFormats().get_metadata_formats('dcat')[0],
                       datacite_oai_dc_xsl_path))
-
-                
-
-
