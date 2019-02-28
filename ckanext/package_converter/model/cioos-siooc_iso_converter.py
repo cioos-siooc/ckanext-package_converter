@@ -18,12 +18,12 @@ import copy
 from logging import getLogger
 log = getLogger(__name__)
 
-# this converter is only valid for the metadata schema for EnviDat
-# (search envidat/envidat_theme project in github)
-class Iso19139Converter(BaseConverter):
+# this converter is a hack of the envidata iso converter
+# used as proof of concept.
+class cioosIso19139Converter(BaseConverter):
 
     def __init__(self):
-        iso_output_format = MetadataFormats().get_metadata_formats('iso19139')[0]
+        iso_output_format = MetadataFormats().get_metadata_formats('cioos')[0]
         BaseConverter.__init__(self, iso_output_format)
 
     def convert(self, record):
@@ -40,7 +40,7 @@ class Iso19139Converter(BaseConverter):
                                  input_format=self.get_input_format().get_format_name()))
 
     def __unicode__(self):
-        return super(Iso19139Converter, self).__unicode__() + u'ISO19139 Converter '
+        return super(cioosIso19139Converter, self).__unicode__() + u'CIOOS ISO19139 Converter '
 
 
     def _iso_convert_dataset(self, dataset_dict):
@@ -85,7 +85,10 @@ class Iso19139Converter(BaseConverter):
                                                   '@codeListValue':"dataset"}}
 
         # Point of Contact (M)
-        maintainer = json.loads(dataset_dict.get('maintainer', '{}'))
+        try:
+            maintainer = json.loads(dataset_dict.get('maintainer', '{}'))
+        except:
+            maintainer = {}
 
         responsible_party_contact = collections.OrderedDict()
 
@@ -377,6 +380,7 @@ class Iso19139Converter(BaseConverter):
 
     # Take date of type Available or the publication year
     def _get_publication_date(self, data_dict):
+        extras_dict = self._extras_as_dict(data_dict.get('extras',{}))
         publication_date = ''
         dates = []
         try:
@@ -387,8 +391,19 @@ class Iso19139Converter(BaseConverter):
             if date.get('date_type')=='available':
                 publication_date = parse(date.get('date')).strftime("%Y-%m-%d")
         if not publication_date:
-            publication = json.loads(data_dict.get('publication', '{}'))
-            publication_date = parse(publication["publication_year"]+'-12-31').strftime("%Y-%m-%d")
+            try:
+                dates = json.loads(self._get_ignore_case(extras_dict,'dataset-reference-date', '[]'))
+            except:
+                dates = []
+            for date in dates:
+                if date.get('type')=='publication':
+                            publication_date = parse(date.get('value')).strftime("%Y-%m-%d")
+        if not publication_date:
+            try:
+                publication = json.loads(data_dict.get('publication', '{}'))
+                publication_date = parse(publication["publication_year"]+'-12-31').strftime("%Y-%m-%d")
+            except:
+                publication_date = ''
         return publication_date
 
     # make capcase code
