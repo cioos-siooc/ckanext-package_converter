@@ -37,6 +37,13 @@ This extension allows the export (and soon import) of CKAN package metadata to m
 It allows the user to easily define custom converters and reuse existing ones.
 Formats supported: DataCite, OAI_DC,...
 
+CIOOS-SIOOC Changes
+===================
+* Add a cioos converter as proof of concept. It is mostly a copy of the envidata
+  iso converter and will need to be adjusted once a metadata standard is settled
+  on.
+  [5aad88a](https://github.com/cioos-siooc/ckanext-spatial/commit/5aad88a72aab07b73fecfb977d7be2cdaf0a7c17)
+
 ------------
 Requirements
 ------------
@@ -79,7 +86,7 @@ via the configuration file. For example::
 
     # full path to converters (optional)
     package_converter.converters = ckanext.package_converter.model.scheming_converter.Datacite31SchemingConverter
-  
+
 
 
 ------------------------
