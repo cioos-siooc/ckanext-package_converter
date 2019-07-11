@@ -85,7 +85,13 @@ class Iso19139Converter(BaseConverter):
                                                   '@codeListValue':"dataset"}}
 
         # Point of Contact (M)
-        maintainer = json.loads(dataset_dict.get('maintainer', '{}'))
+        try:
+            maintainer = json.loads(dataset_dict.get('CI_ResponsibleParty', '{}'))
+        except:
+            try:
+                maintainer = json.loads(dataset_dict.get('maintainer', '{}'))
+            except:
+                maintainer = {}
 
         responsible_party_contact = collections.OrderedDict()
 

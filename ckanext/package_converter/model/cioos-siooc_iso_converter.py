@@ -71,7 +71,7 @@ class cioosIso19139Converter(BaseConverter):
         md_metadata_dict['gmd:fileIdentifier'] = {'gco:CharacterString':identifier}
 
         # Metadata language (C) 3-letter from ISO 639-2/B
-        iso_language = self._get_iso_language_code(dataset_dict.get('language', 'en'))
+        iso_language = self._get_iso_language_code(dataset_dict.get('language', 'eng'))
         md_metadata_dict['gmd:language'] = {'gco:CharacterString':iso_language}
 
         # Dataset character set (C) : Defaulting to UTF-8
@@ -84,11 +84,65 @@ class cioosIso19139Converter(BaseConverter):
         md_metadata_dict['gmd:hierarchyLevel'] = {'gmd:MD_ScopeCode':{'@codeList':"http://www.isotc211.org/2005/resources/Codelist/gmxCodelists.xml#MD_ScopeCode",
                                                   '@codeListValue':"dataset"}}
 
+        md_metadata_dict['gmd:metadataScope'] = {'gmd:MD_Scope':'gmd:resourceCode':'gmd:MD_ScopeCode':{'@codeList':"http://standards.iso.org/iso/19115/resources/Codelist/cat/codelists.xml#MD_ScopeCode",
+                                                 '@codeListValue':dataset_dict.get('scope_code', ''),
+                                                 '#text':dataset_dict.get('scope_name', '')}}
+
+        md_metadata_dict['mdb:contact'] = {'cit:CI_Responsibility':{
+                                            'cit:role':
+                                                'cit:CI_RoleCode':{
+                                                    '@codeList':"http://w3.energistics.org/energyml/profiles/EIP/ISO_20130624/catCodelists19115-3.xml#CI_RoleCode",
+                                                    '@odeListValue': dataset_dict.get('RP_role',''),
+                                                    '#text':dataset_dict.get('RP_role','')},
+                                                'cit:party':
+                                                    'cit:CI_Organisation':{
+                                                        'cit:name':'gco:CharacterString':{'#text':dataset_dict.get('RP_affiliation','')},
+                                                        'cit:contactInfo':'cit:CI_Contact':'cit:phone':{'@nilreason'='missing' '@nil'='true'},
+                                                        'cit:individual':
+                                                            'cit:CI_Individual':
+                                                                'cit:name':
+                                                                    'gco:CharacterString':{'#text':dataset_dict.get('RP_name','')},
+                                                                'cit:contactInfo':
+                                                                    'cit:CI_Contact': {
+                                                                        'cit:phone':{'@nilreason'='missing' '@nil'='true'},
+                                                                        'cit:address':'cit:CI_Address':'cit:electronicMailAddress':'gco:CharacterString':{'#text':dataset_dict.get('RP_email','')}
+                                                                    }
+
+                                                }
+                                            }}
+
+        # Metadata Creation Date (M)
+        metadata_created = parse(dataset_dict.get("metadata_created", '')).strftime("%Y-%m-%dT%H:%M:%S")
+        md_metadata_dict['gmd:dateStamp']={'gco:DateTime':{'#text':metadata_created}}
+
+        metadata_dates = collections.OrderedDict()
+        try:
+            dates = json.loads(dataset_dict.get('CI_Date', '[]'))
+        except:
+            dates = []
+        for date in CI_Date:
+            date_value = date.get('date','')
+            date_type = date.get('dateType', '')
+            metadata_dates.append( {'cit:CI_Date': {
+                'cit:date':{
+                    'gco:DateTime':{'#text':date_value}
+                },
+                'cit:dateType':
+                    'cit:CI_DateTypeCode':{
+                        '@codeList':'http://w3.energistics.org/energyml/profiles/EIP/v1.0.0.0/EIPcodelists19115-3.xml#CI_DateTypeCode',
+                        '@codeListValue':date_type,
+                        '#text':date_type}
+            }})
+        md_metdata_dict['mdb:dateInfo']= metadata_dates
+
         # Point of Contact (M)
         try:
-            maintainer = json.loads(dataset_dict.get('maintainer', '{}'))
+            maintainer = json.loads(dataset_dict.get('CI_ResponsibleParty', '{}'))
         except:
-            maintainer = {}
+            try:
+                maintainer = json.loads(dataset_dict.get('maintainer', '{}'))
+            except:
+                maintainer = {}
 
         responsible_party_contact = collections.OrderedDict()
 
@@ -101,7 +155,7 @@ class cioosIso19139Converter(BaseConverter):
 #         rpc_ci_contact['gmd:phone']['gmd:CI_Telephone']['gmd:voice'] = {'gco:CharacterString':'', '@gco:nilReason':"missing"}
 #         rpc_ci_contact['gmd:phone']['gmd:CI_Telephone']['gmd:facsimile'] = {'gco:CharacterString':'', '@gco:nilReason':"missing"}
 
-        rpc_ci_contact['gmd:address'] = {'gmd:CI_Address':collections.OrderedDict()}
+#        rpc_ci_contact['gmd:address'] = {'gmd:CI_Address':collections.OrderedDict()}
 #         rpc_ci_contact['gmd:address']['gmd:CI_Address']['gmd:deliveryPoint'] = {'gco:CharacterString':'', '@gco:nilReason':"missing"}
 #         rpc_ci_contact['gmd:address']['gmd:CI_Address']['gmd:city'] = {'gco:CharacterString':'', '@gco:nilReason':"missing"}
 #         rpc_ci_contact['gmd:address']['gmd:CI_Address']['gmd:administrativeArea'] = {'gco:CharacterString':'', '@gco:nilReason':"missing"}
@@ -111,7 +165,7 @@ class cioosIso19139Converter(BaseConverter):
 
         responsible_party_contact['gmd:contactInfo'] = {'gmd:CI_Contact':rpc_ci_contact}
 
-        responsible_party_contact['gmd:role'] = {'gmd:CI_RoleCode':{'@codeListValue':"pointOfContact",
+        responsible_party_contact['gmd:role'] = {'gmd:CI_RoleCode':{'@codeListValue':{'gco:CharacterString':maintainer.get('role','pointOfContact')},
                                                                     '@codeList':"http://www.isotc211.org/2005/resources/Codelist/gmxCodelists.xml#CI_RoleCode"}}
 
         md_metadata_dict['gmd:contact']={'gmd:CI_ResponsibleParty':responsible_party_contact}
@@ -121,7 +175,7 @@ class cioosIso19139Converter(BaseConverter):
         md_metadata_dict['gmd:dateStamp']={'gco:DateTime':{'#text':metadata_created}}
 
         # Metadata Standard and Version (O)
-        md_metadata_dict['gmd:metadataStandardName']={'gco:CharacterString':{'#text':'ISO 19115:2003/19139'}}
+        md_metadata_dict['gmd:metadataStandardName']={'gco:CharacterString':{'#text':'ISO 19115:2014/19139'}}
         md_metadata_dict['gmd:metadataStandardVersion']={'gco:CharacterString':{'#text':'1.0'}}
 
         # Reference System Information (O)
@@ -130,25 +184,37 @@ class cioosIso19139Converter(BaseConverter):
 
         # Identification Info (mandatory subelements)
         md_data_id = collections.OrderedDict()
+
+
+
+
+        md_metadata_dict['mdb:identificationInfo'] = {'mri:MD_DataIdentification':'mri:citation':'cit:CI_Citation':'cit:title':'gco:CharacterString':{'#text':title}}
+
+
         # citation
         citation_dict = collections.OrderedDict()
-        citation_dict['gmd:title'] = {'gco:CharacterString':dataset_dict.get('title', '')}
+        citation_dict['cit:title'] = {'gco:CharacterString':dataset_dict.get('title', '')}
 
-        citation_dict['gmd:date'] = {'gmd:CI_Date':collections.OrderedDict()}
-        citation_dict['gmd:date']['gmd:CI_Date']['gmd:date'] = {'gco:Date':self._get_publication_date(dataset_dict)}
-        citation_dict['gmd:date']['gmd:CI_Date']['gmd:dateType'] = {'gmd:CI_DateTypeCode':{
+
+        citation_dict['gmd:date'] = {'cit:CI_Date':collections.OrderedDict()}
+        citation_dict['gmd:date']['cit:CI_Date']['cit:date'] = {'gco:DateTime':self._get_publication_date(dataset_dict)}
+        citation_dict['gmd:date']['cit:CI_Date']['cit:dateType'] = {'gmd:CI_DateTypeCode':{
                                                                            '@codeListValue':'publication',
-                                                                           '@codeList':'http://www.isotc211.org/2005/resources/Codelist/gmxCodelists.xml#CI_DateTypeCode'
+                                                                           '@codeList':'http://www.isotc211.org/2014/resources/Codelist/gmxCodelists.xml#CI_DateTypeCode',
+                                                                           '#text':'publication'
                                                                            }}
         presentation_form = self._cap_code(dataset_dict.get('resource_type', ''))
         if presentation_form:
             citation_dict['gmd:presentationForm'] = {'gmd:CI_PresentationFormCode':{
                                                                '@codeListValue': presentation_form,
-                                                               '@codeList':'http://www.isotc211.org/2005/resources/Codelist/gmxCodelists.xml#CI_PresentationFormCode'
+                                                               '@codeList':'http://www.isotc211.org/2014/resources/Codelist/gmxCodelists.xml#CI_PresentationFormCode'
                                                             }}
-        md_data_id['gmd:citation'] = {'gmd:CI_Citation':citation_dict}
+        md_data_id['mri:citation'] = {'cit:CI_Citation':citation_dict}
+
         # abstract
-        md_data_id['gmd:abstract'] = {'gco:CharacterString':dataset_dict.get('notes','').replace('\n', ' ').replace('\r', ' ')}
+        notes = dataset_dict.get('notes','') or dataset_dict.get('notes_translated','')
+        if notes:
+            md_data_id['gmd:abstract'] = {'gco:CharacterString':notes.replace('\n', ' ').replace('\r', ' ')}
 
         # purpose (only in extras)
         purpose = self._get_ignore_case(extras_dict, 'purpose')
@@ -290,7 +356,7 @@ class cioosIso19139Converter(BaseConverter):
             md_data_id['gmd:extent'] = {'gmd:EX_Extent':{'gmd:geographicElement': geographic_element}}
 
         # assign to parent
-        md_metadata_dict['gmd:identificationInfo'] = {'gmd:MD_DataIdentification':md_data_id}
+        md_metadata_dict['mdb:identificationInfo'] = {'mri:MD_DataIdentification':md_data_id}
 
         # distribution info (O)
         md_data_dist = collections.OrderedDict()
