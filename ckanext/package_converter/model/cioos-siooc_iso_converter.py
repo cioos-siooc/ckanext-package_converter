@@ -141,12 +141,12 @@ class cioosIso19139Converter(BaseConverter):
         metadata_created = parse(dataset_dict.get("metadata_created", '')).strftime("%Y-%m-%dT%H:%M:%S")
         md_metadata_dict['gmd:dateStamp']={'gco:DateTime':{'#text':metadata_created}}
 
-        metadata_dates = collections.OrderedDict()
+        metadata_dates = []
         try:
             dates = json.loads(dataset_dict.get('CI_Date', '[]'))
         except:
             dates = []
-        for date in CI_Date:
+        for date in dates:
             date_value = date.get('date','')
             date_type = date.get('dateType', '')
             metadata_dates.append( {'cit:CI_Date': {
@@ -161,7 +161,7 @@ class cioosIso19139Converter(BaseConverter):
                     }
                 }
             }})
-        md_metdata_dict['mdb:dateInfo']= metadata_dates
+        md_metadata_dict['mdb:dateInfo']= metadata_dates
 
         # Point of Contact (M)
         try:
@@ -174,6 +174,8 @@ class cioosIso19139Converter(BaseConverter):
 
         responsible_party_contact = collections.OrderedDict()
 
+        if isinstance(maintainer, list):
+            maintainer = maintainer[0]
         responsible_party_contact['gmd:individualName'] = {'gco:CharacterString':maintainer.get('name','')}
         responsible_party_contact['gmd:organisationName'] = {'gco:CharacterString':maintainer.get('affiliation','')}
 #        responsible_party_contact['gmd:positionName'] = {'gco:CharacterString':'', '@gco:nilReason':"missing"}
@@ -183,7 +185,7 @@ class cioosIso19139Converter(BaseConverter):
 #         rpc_ci_contact['gmd:phone']['gmd:CI_Telephone']['gmd:voice'] = {'gco:CharacterString':'', '@gco:nilReason':"missing"}
 #         rpc_ci_contact['gmd:phone']['gmd:CI_Telephone']['gmd:facsimile'] = {'gco:CharacterString':'', '@gco:nilReason':"missing"}
 
-#        rpc_ci_contact['gmd:address'] = {'gmd:CI_Address':collections.OrderedDict()}
+        rpc_ci_contact['gmd:address'] = {'gmd:CI_Address':collections.OrderedDict()}
 #         rpc_ci_contact['gmd:address']['gmd:CI_Address']['gmd:deliveryPoint'] = {'gco:CharacterString':'', '@gco:nilReason':"missing"}
 #         rpc_ci_contact['gmd:address']['gmd:CI_Address']['gmd:city'] = {'gco:CharacterString':'', '@gco:nilReason':"missing"}
 #         rpc_ci_contact['gmd:address']['gmd:CI_Address']['gmd:administrativeArea'] = {'gco:CharacterString':'', '@gco:nilReason':"missing"}
@@ -239,8 +241,15 @@ class cioosIso19139Converter(BaseConverter):
 
         # abstract
         notes = dataset_dict.get('notes','') or dataset_dict.get('notes_translated','')
+        log.debug(notes)
         if notes:
-            md_data_id['gmd:abstract'] = {'gco:CharacterString':notes.replace('\n', ' ').replace('\r', ' ')}
+            if isinstance(notes, dict):
+                for key, value in list(notes.items()):
+                    notes[key] = value.replace('\n', ' ').replace('\r', ' ')
+            else:
+                notes.replace('\n', ' ').replace('\r', ' ')
+            md_data_id['gmd:abstract'] = {'gco:CharacterString':notes}
+        log.debug(notes)
 
         # purpose (only in extras)
         purpose = self._get_ignore_case(extras_dict, 'purpose')
